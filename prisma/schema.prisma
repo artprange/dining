@@ -25,6 +25,7 @@ model Restaurant {
   neighborhood  String?
   city          String?
   notes         String?
+  wouldReturn   Boolean?
   visits        Visit[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -36,7 +37,6 @@ model Visit {
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   visitedAt    DateTime
   rating       Int
-  wouldReturn  Boolean
   notes        String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt

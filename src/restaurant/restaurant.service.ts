@@ -47,7 +47,6 @@ export class RestaurantService {
         visitCount,
         averageRating,
         lastVisitedAt: lastVisit?.visitedAt ?? null,
-        wouldReturn: lastVisit?.wouldReturn ?? null,
       };
     });
   }

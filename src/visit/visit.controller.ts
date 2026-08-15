@@ -8,11 +8,11 @@ export class VisitController {
   constructor(private readonly visitService: VisitService) {}
 
   @Post()
-  async create(
+  create(
     @Param('restaurantId') restaurantId: string,
     @Body() data: CreateVisitDto,
-  ): Promise<Visit> {
-    return await this.visitService.create(restaurantId, data);
+  ) {
+    return this.visitService.create(restaurantId, data);
   }
 
   @Get()

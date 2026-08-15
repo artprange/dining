@@ -12,7 +12,6 @@ export class VisitService {
         restaurantId,
         visitedAt: new Date(data.visitedAt),
         rating: data.rating,
-        wouldReturn: data.wouldReturn,
         notes: data.notes,
       },
       include: {

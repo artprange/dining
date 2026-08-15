@@ -1,5 +1,4 @@
 import {
-  IsBoolean,
   IsDateString,
   IsInt,
   IsOptional,
@@ -16,9 +15,6 @@ export class CreateVisitDto {
   @Min(1)
   @Max(5)
   rating!: number;
-
-  @IsBoolean()
-  wouldReturn!: boolean;
 
   @IsString()
   @IsOptional()
