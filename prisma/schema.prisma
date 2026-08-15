@@ -8,7 +8,13 @@ datasource db {
   provider = "postgresql"
 }
 
-
+model CuisineType {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  restaurants Restaurant[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
 
 model Restaurant {
   id            String      @id @default(uuid())
@@ -21,12 +27,4 @@ model Restaurant {
   notes         String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-}
-
-model CuisineType {
-  id          String       @id @default(uuid())
-  name        String       @unique
-  restaurants Restaurant[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
 }
