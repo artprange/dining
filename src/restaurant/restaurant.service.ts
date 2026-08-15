@@ -15,14 +15,40 @@ export class RestaurantService {
     });
   }
 
-  findAll() {
-    return this.prisma.restaurant.findMany({
+  async findAll() {
+    const restaurants = await this.prisma.restaurant.findMany({
       include: {
         cuisineType: true,
+        visits: {
+          orderBy: {
+            visitedAt: 'desc',
+          },
+        },
       },
       orderBy: {
         name: 'asc',
       },
+    });
+
+    return restaurants.map((restaurant) => {
+      const visitCount = restaurant.visits.length;
+
+      const averageRating =
+        visitCount > 0
+          ? restaurant.visits.reduce((sum, visit) => sum + visit.rating, 0) /
+            visitCount
+          : null;
+
+      const lastVisit = restaurant.visits[0] ?? null;
+
+      return {
+        ...restaurant,
+        visited: visitCount > 0,
+        visitCount,
+        averageRating,
+        lastVisitedAt: lastVisit?.visitedAt ?? null,
+        wouldReturn: lastVisit?.wouldReturn ?? null,
+      };
     });
   }
 }
