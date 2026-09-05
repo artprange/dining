@@ -1,98 +1,79 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Dining — back-end
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API para cadastrar restaurantes, registrar visitas com nota e, principalmente,
+responder a pergunta que motivou o projeto: **"entao, a gente vai comer onde?"**
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Stack: NestJS 11, Prisma 7 (driver adapter `pg`), PostgreSQL.
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## Rodando
 
 ```bash
-$ npm install
+npm install                 # roda `prisma generate` no postinstall
+cp .env.example .env        # ajuste DATABASE_URL
+npx prisma migrate deploy
+npm run start:dev
 ```
 
-## Compile and run the project
+- API: `http://localhost:3000`
+- Documentacao (Swagger): `http://localhost:3000/api`
+- Healthcheck: `http://localhost:3000/health`
+
+## Modelo
+
+- **CuisineType** — tipo de culinaria. Relacao N:N com restaurante, porque um
+  lugar pode ser japones *e* peruano.
+- **Tag** — caracteristica livre (romantico, aceita pet, tem estacionamento).
+  Tambem N:N.
+- **Restaurant** — nome, endereco, faixa de preco (`priceRange`), situacao
+  (`status`: `ACTIVE`/`ARCHIVED`), prioridade de desejo (`wishlistPriority`)
+  e o veredito `wouldReturn`.
+- **Visit** — uma ida, com data e nota de 1 a 5. Apagar o restaurante apaga as
+  visitas em cascata.
+
+`wouldReturn` fica no restaurante, e nao na visita, porque e um veredito atual
+("voltaria?"), nao um registro historico.
+
+## Endpoints
+
+| Metodo | Rota | O que faz |
+| --- | --- | --- |
+| `GET` | `/health` | App + conexao com o banco |
+| `POST` `GET` | `/cuisine-types` | Cria / lista tipos de culinaria |
+| `GET` `PATCH` `DELETE` | `/cuisine-types/:id` | Detalha / atualiza / remove |
+| `POST` `GET` | `/tags` | Cria / lista tags |
+| `GET` `PATCH` `DELETE` | `/tags/:id` | Detalha / atualiza / remove |
+| `POST` `GET` | `/restaurants` | Cadastra / lista com resumo de visitas |
+| `GET` | `/restaurants/suggestion` | **Sugere onde comer** |
+| `GET` `PATCH` `DELETE` | `/restaurants/:id` | Detalha (com historico) / atualiza / remove |
+| `POST` `GET` | `/restaurants/:id/visits` | Registra / lista visitas |
+| `GET` `PATCH` `DELETE` | `/restaurants/:id/visits/:visitId` | Detalha / atualiza / remove |
+
+### Sugestao
+
+`GET /restaurants/suggestion` aceita os mesmos filtros da listagem
+(`cuisineTypeIds`, `tagIds`, `priceRanges`, `city`, `neighborhood`,
+`onlyWouldReturn`, `onlyNotVisited`, `search`), mais `strategy` e `limit`.
 
 ```bash
-# development
-$ npm run start
+# as 3 melhores opcoes baratas onde voces voltariam
+curl "localhost:3000/restaurants/suggestion?priceRanges=CHEAP&onlyWouldReturn=true"
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# sorteia um lugar novo, para quando ninguem quer decidir
+curl "localhost:3000/restaurants/suggestion?onlyNotVisited=true&strategy=RANDOM&limit=1"
 ```
 
-## Run tests
+Cada resultado vem com `score` e `reasons`, para o front conseguir explicar a
+escolha ("faz 8 meses que voces nao vao", "esta no topo da lista de desejo").
+
+A heuristica esta isolada em [`src/restaurant/restaurant.scoring.ts`](src/restaurant/restaurant.scoring.ts) —
+funcao pura, com os pesos no topo do arquivo e coberta por testes unitarios.
+
+## Testes
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm test          # unitarios (funcao pura de score, sem banco)
+npm run test:e2e  # e2e contra um Postgres real; cria e limpa os proprios dados
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+O e2e usa o `DATABASE_URL` do `.env`. Ele cria registros com nomes unicos e os
+apaga no `afterAll`, mas ainda assim aponte para um banco de desenvolvimento.
